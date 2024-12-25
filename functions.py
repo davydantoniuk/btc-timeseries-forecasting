@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
+import os
+
 def plot_time_series(timesteps, values, format='.', start=0, end=None, label=None):
   plt.plot(timesteps[start:end], values[start:end], format, label=label)
   plt.xlabel("Time")
@@ -46,3 +48,12 @@ def make_train_test_splits(windows, labels, test_split=0.2):
     train_windows, test_windows = windows[:split_size], windows[split_size:]
     train_labels, test_labels = labels[:split_size], labels[split_size:]
     return train_windows, test_windows, train_labels, test_labels
+
+def crteate_model_checkpoint(model_name, save_path="models"):
+    return tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(save_path, model_name + ".keras"),
+                                              verbose=0,
+                                              save_best_only=True)
+
+def make_preds(model, input_data):
+    forecast = model.predict(input_data)
+    return tf.squeeze(forecast)
