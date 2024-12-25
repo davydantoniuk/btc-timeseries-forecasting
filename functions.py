@@ -101,3 +101,50 @@ def kpss_test(series, title=''):
         print("Weak evidence against the null hypothesis")
         print("Fail to reject the null hypothesis")
         print("Data has no unit root and is stationary")
+
+from tensorflow.keras import layers
+def get_ensemble_models(horizon, 
+                        train_data,
+                        test_data,
+                        num_iter=10, 
+                        num_epochs=100, 
+                        loss_fns=["mae", "mse", "mape"]):
+
+  ensemble_models = []
+
+  for i in range(num_iter):
+    for loss_function in loss_fns:
+      print(f"Optimizing model by reducing: {loss_function} for {num_epochs} epochs, model number: {i}")
+      model = tf.keras.Sequential([
+        layers.Dense(128, kernel_initializer="he_normal", activation="relu"), 
+        layers.Dense(128, kernel_initializer="he_normal", activation="relu"),
+        layers.Dense(horizon)                                 
+      ])
+
+      model.compile(loss=loss_function,
+                    optimizer=tf.keras.optimizers.Adam(),
+                    metrics=["mae", "mse"])
+
+      model.fit(train_data,
+                epochs=num_epochs,
+                verbose=0,
+                validation_data=test_data,
+                # Add callbacks to prevent training from going/stalling for too long
+                callbacks=[tf.keras.callbacks.EarlyStopping(monitor="val_loss",
+                                                            patience=200,
+                                                            restore_best_weights=True),
+                           tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss",
+                                                                patience=100,
+                                                                verbose=1)])
+
+      ensemble_models.append(model)
+
+  return ensemble_models 
+
+# Function which uses a list of trained models to make and return a list of predictions
+def make_ensemble_preds(ensemble_models, data):
+  ensemble_preds = []
+  for model in ensemble_models:
+    preds = model.predict(data, verbose=0) 
+    ensemble_preds.append(preds)
+  return tf.constant(tf.squeeze(ensemble_preds))
