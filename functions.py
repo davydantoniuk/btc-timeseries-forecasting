@@ -148,3 +148,14 @@ def make_ensemble_preds(ensemble_models, data):
     preds = model.predict(data, verbose=0) 
     ensemble_preds.append(preds)
   return tf.constant(tf.squeeze(ensemble_preds))
+
+# Find upper and lower bounds of ensemble predictions
+def get_upper_lower(preds): 
+  # 1. Measure the standard deviation of the predictions
+  std = tf.math.reduce_std(preds, axis=0)
+  # 2. Multiply the standard deviation by 1.96
+  interval = 1.96 * std 
+  # 3. Get the prediction interval upper and lower bounds
+  preds_mean = tf.reduce_mean(preds, axis=0)
+  lower, upper = preds_mean - interval, preds_mean + interval
+  return lower, upper
