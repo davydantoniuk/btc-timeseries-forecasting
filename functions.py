@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import numpy as np
 def plot_time_series(timesteps, values, format='.', start=0, end=None, label=None):
   plt.plot(timesteps[start:end], values[start:end], format, label=label)
   plt.xlabel("Time")
@@ -28,3 +29,20 @@ def evaluate_preds(y_true, y_pred):
             "rmse": rmse.numpy(),
             "mape": mape.result().numpy(),
             "mase": mase.numpy()}
+
+def make_windows(x, window_size=7, horizon=1):
+    window_step = np.expand_dims(np.arange(window_size+horizon), axis=0)
+    window_indexes = window_step + np.expand_dims(np.arange(len(x)-(window_size+horizon-1)), axis=0).T
+    windowed_array = x[window_indexes]
+
+    def get_labelled_windows(x, horizon=1):
+        return x[:, :-horizon], x[:, -horizon:]
+    
+    windows, labels = get_labelled_windows(windowed_array, horizon=horizon)
+    return windows, labels
+
+def make_train_test_splits(windows, labels, test_split=0.2):
+    split_size = int(len(windows) * (1 - test_split))
+    train_windows, test_windows = windows[:split_size], windows[split_size:]
+    train_labels, test_labels = labels[:split_size], labels[split_size:]
+    return train_windows, test_windows, train_labels, test_labels
