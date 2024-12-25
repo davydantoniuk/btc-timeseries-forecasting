@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 import os
+import pandas as pd
+from statsmodels.tsa.stattools import adfuller, kpss
 
 def plot_time_series(timesteps, values, format='.', start=0, end=None, label=None):
   plt.plot(timesteps[start:end], values[start:end], format, label=label)
@@ -57,3 +59,45 @@ def crteate_model_checkpoint(model_name, save_path="models"):
 def make_preds(model, input_data):
     forecast = model.predict(input_data)
     return tf.squeeze(forecast)
+
+def adf_test(series,title=''):
+    print(f'Augmented Dickey-Fuller Test: {title}')
+    result = adfuller(series.dropna(),autolag='AIC') 
+    
+    labels = ['ADF test statistic','p-value','# lags used','# observations']
+    out = pd.Series(result[0:4],index=labels)
+
+    for key,val in result[4].items():
+        out[f'critical value ({key})']=val
+        
+    print(out.to_string())          
+    
+    if result[1] <= 0.05:
+        print("Strong evidence against the null hypothesis")
+        print("Reject the null hypothesis")
+        print("Data has no unit root and is stationary")
+    else:
+        print("Weak evidence against the null hypothesis")
+        print("Fail to reject the null hypothesis")
+        print("Data has a unit root and is non-stationary")
+
+def kpss_test(series, title=''):
+    print(f'Kwiatkowski-Phillips-Schmidt-Shin Test: {title}')
+    result = kpss(series.dropna(), regression='c', nlags="auto")
+    
+    labels = ['KPSS test statistic', 'p-value', '# lags used']
+    out = pd.Series(result[0:3], index=labels)
+
+    for key, val in result[3].items():
+        out[f'critical value ({key})'] = val
+        
+    print(out.to_string())        
+    
+    if result[1] <= 0.05:
+        print("Strong evidence against the null hypothesis")
+        print("Reject the null hypothesis")
+        print("Data has a unit root and is non-stationary")
+    else:
+        print("Weak evidence against the null hypothesis")
+        print("Fail to reject the null hypothesis")
+        print("Data has no unit root and is stationary")
